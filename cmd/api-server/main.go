@@ -10,6 +10,7 @@ import (
 
 	"github.com/hackgods/distributed-appointment-scheduling/internal/config"
 	"github.com/hackgods/distributed-appointment-scheduling/internal/db"
+	"github.com/hackgods/distributed-appointment-scheduling/internal/appointment"
 	redisclient "github.com/hackgods/distributed-appointment-scheduling/internal/redis"
 )
 
@@ -48,6 +49,9 @@ func main() {
 		}
 	}()
 	log.Println("connected to Redis")
+
+	repo := appointment.NewPgRepository(pgPool)
+	_ = repo
 
 	fmt.Printf("Config: appointment_ttl=%s lock_ttl=%s shutdown_timeout=%s\n",
 		cfg.AppointmentTTL, cfg.LockTTL, cfg.ShutdownTimeout)
