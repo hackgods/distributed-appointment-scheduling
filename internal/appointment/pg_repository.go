@@ -141,6 +141,15 @@ func (r *PgRepository) GetSlotByID(ctx context.Context, id uuid.UUID) (*Appointm
 	return scanSlot(row)
 }
 
+func (r *PgRepository) GetAppointmentByID(ctx context.Context, id uuid.UUID) (*Appointment, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT id, slot_id, patient_id, status, created_at, updated_at, expires_at
+		FROM appointments
+		WHERE id = $1
+	`, id)
+	return scanAppointment(row)
+}
+
 func (r *PgRepository) GetConfirmedAppointmentForSlot(ctx context.Context, slotID uuid.UUID) (*Appointment, error) {
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, slot_id, patient_id, status, created_at, updated_at, expires_at

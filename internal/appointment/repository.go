@@ -24,6 +24,7 @@ type Repository interface {
 
 	// For conflict checks
 	GetConfirmedAppointmentForSlot(ctx context.Context, slotID uuid.UUID) (*Appointment, error)
+	GetAppointmentByID(ctx context.Context, id uuid.UUID) (*Appointment, error)
 
 	// Creation and updates
 	CreatePendingAppointment(ctx context.Context, slotID, patientID uuid.UUID, expiresAt time.Time) (*Appointment, error)

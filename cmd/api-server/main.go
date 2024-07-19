@@ -51,7 +51,10 @@ func main() {
 	log.Println("connected to Redis")
 
 	repo := appointment.NewPgRepository(pgPool)
-	_ = repo
+	locker := redisclient.NewRedisSlotLocker(rdb, cfg.LockTTL)
+	svc := appointment.NewService(repo, locker, cfg)
+
+	_ = svc
 
 	fmt.Printf("Config: appointment_ttl=%s lock_ttl=%s shutdown_timeout=%s\n",
 		cfg.AppointmentTTL, cfg.LockTTL, cfg.ShutdownTimeout)
