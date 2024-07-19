@@ -187,3 +187,40 @@ func (s *Service) logEvent(ctx context.Context, appointmentID uuid.UUID, eventTy
 		log.Printf("failed to insert event log %s for appointment %s: %v", eventType, appointmentID, err)
 	}
 }
+
+// GetAppointment retrieves a fully hydrated appointment by ID
+func (s *Service) GetAppointment(ctx context.Context, id uuid.UUID) (*AppointmentDetail, error) {
+	detail, err := s.repo.GetAppointmentDetail(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("get appointment: %w", err)
+	}
+	return detail, nil
+}
+
+// ListAppointmentsByPatient retrieves appointments for a specific patient
+func (s *Service) ListAppointmentsByPatient(ctx context.Context, patientID uuid.UUID, limit, offset int) ([]AppointmentDetail, error) {
+	if limit <= 0 {
+		limit = 20 // default
+	}
+	if limit > 100 {
+		limit = 100 // max
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	appointments, err := s.repo.ListAppointmentsByPatient(ctx, patientID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("list appointments by patient: %w", err)
+	}
+	return appointments, nil
+}
+
+// ListAppointmentsBySlot retrieves all appointments for a specific slot
+func (s *Service) ListAppointmentsBySlot(ctx context.Context, slotID uuid.UUID) ([]AppointmentDetail, error) {
+	appointments, err := s.repo.ListAppointmentsBySlot(ctx, slotID)
+	if err != nil {
+		return nil, fmt.Errorf("list appointments by slot: %w", err)
+	}
+	return appointments, nil
+}

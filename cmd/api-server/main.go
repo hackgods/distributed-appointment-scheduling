@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -56,7 +57,18 @@ func main() {
 	locker := redisclient.NewRedisSlotLocker(rdb, cfg.LockTTL)
 	svc := appointment.NewService(repo, locker, cfg)
 
-	router := api.NewRouter(svc)
+	version := os.Getenv("APP_VERSION")
+	if version == "" {
+		version = "dev"
+	}
+
+	router := api.NewRouter(api.RouterConfig{
+		Service: svc,
+		PgPool:  pgPool,
+		Redis:   rdb,
+		Env:     cfg.Env,
+		Version: version,
+	})
 
 	server := &http.Server{
 		Addr:              ":" + cfg.HTTPPort,

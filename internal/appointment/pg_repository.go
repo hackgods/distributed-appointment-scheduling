@@ -236,3 +236,162 @@ func nullableTime(t time.Time) *time.Time {
 	}
 	return &t
 }
+
+func scanAppointmentDetail(row pgx.Row) (*AppointmentDetail, error) {
+	var a Appointment
+	var expiresAt *time.Time
+
+	// Slot fields
+	var slot AppointmentSlot
+	var slotPractitionerID uuid.UUID
+
+	// Patient fields
+	var patient Patient
+	var patientEmail *string
+
+	// Clinician fields
+	var clinician Clinician
+	var clinicianSpecialty *string
+
+	err := row.Scan(
+		// Appointment fields
+		&a.ID,
+		&a.SlotID,
+		&a.PatientID,
+		&a.Status,
+		&a.CreatedAt,
+		&a.UpdatedAt,
+		&expiresAt,
+		// Slot fields
+		&slot.ID,
+		&slotPractitionerID,
+		&slot.StartTime,
+		&slot.EndTime,
+		&slot.Status,
+		&slot.Capacity,
+		&slot.CreatedAt,
+		&slot.UpdatedAt,
+		// Patient fields
+		&patient.ID,
+		&patient.Name,
+		&patientEmail,
+		&patient.CreatedAt,
+		&patient.UpdatedAt,
+		// Clinician fields
+		&clinician.ID,
+		&clinician.Name,
+		&clinicianSpecialty,
+		&clinician.CreatedAt,
+		&clinician.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrAppointmentNotFound
+		}
+		return nil, err
+	}
+
+	a.ExpiresAt = expiresAt
+	slot.PractitionerID = slotPractitionerID
+	patient.Email = patientEmail
+	clinician.Specialty = clinicianSpecialty
+
+	// Validate that IDs match
+	if a.SlotID != slot.ID || a.PatientID != patient.ID || slot.PractitionerID != clinician.ID {
+		return nil, fmt.Errorf("data integrity error: appointment/slot/patient/clinician IDs do not match")
+	}
+
+	return &AppointmentDetail{
+		Appointment: a,
+		Slot:        &slot,
+		Patient:     &patient,
+		Clinician:   &clinician,
+	}, nil
+}
+
+func (r *PgRepository) GetAppointmentDetail(ctx context.Context, id uuid.UUID) (*AppointmentDetail, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT 
+			a.id, a.slot_id, a.patient_id, a.status, a.created_at, a.updated_at, a.expires_at,
+			s.id, s.practitioner_id, s.start_time, s.end_time, s.status, s.capacity, s.created_at, s.updated_at,
+			p.id, p.name, p.email, p.created_at, p.updated_at,
+			c.id, c.name, c.specialty, c.created_at, c.updated_at
+		FROM appointments a
+		INNER JOIN appointment_slots s ON a.slot_id = s.id
+		INNER JOIN patients p ON a.patient_id = p.id
+		INNER JOIN clinicians c ON s.practitioner_id = c.id
+		WHERE a.id = $1
+	`, id)
+	return scanAppointmentDetail(row)
+}
+
+func (r *PgRepository) ListAppointmentsByPatient(ctx context.Context, patientID uuid.UUID, limit, offset int) ([]AppointmentDetail, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT 
+			a.id, a.slot_id, a.patient_id, a.status, a.created_at, a.updated_at, a.expires_at,
+			s.id, s.practitioner_id, s.start_time, s.end_time, s.status, s.capacity, s.created_at, s.updated_at,
+			p.id, p.name, p.email, p.created_at, p.updated_at,
+			c.id, c.name, c.specialty, c.created_at, c.updated_at
+		FROM appointments a
+		INNER JOIN appointment_slots s ON a.slot_id = s.id
+		INNER JOIN patients p ON a.patient_id = p.id
+		INNER JOIN clinicians c ON s.practitioner_id = c.id
+		WHERE a.patient_id = $1
+		ORDER BY a.created_at DESC
+		LIMIT $2 OFFSET $3
+	`, patientID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []AppointmentDetail
+	for rows.Next() {
+		detail, err := scanAppointmentDetail(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, *detail)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (r *PgRepository) ListAppointmentsBySlot(ctx context.Context, slotID uuid.UUID) ([]AppointmentDetail, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT 
+			a.id, a.slot_id, a.patient_id, a.status, a.created_at, a.updated_at, a.expires_at,
+			s.id, s.practitioner_id, s.start_time, s.end_time, s.status, s.capacity, s.created_at, s.updated_at,
+			p.id, p.name, p.email, p.created_at, p.updated_at,
+			c.id, c.name, c.specialty, c.created_at, c.updated_at
+		FROM appointments a
+		INNER JOIN appointment_slots s ON a.slot_id = s.id
+		INNER JOIN patients p ON a.patient_id = p.id
+		INNER JOIN clinicians c ON s.practitioner_id = c.id
+		WHERE a.slot_id = $1
+		ORDER BY a.created_at DESC
+	`, slotID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []AppointmentDetail
+	for rows.Next() {
+		detail, err := scanAppointmentDetail(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, *detail)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}

@@ -51,19 +51,26 @@ type AppointmentSlot struct {
 }
 
 type Appointment struct {
-	ID         uuid.UUID
-	SlotID     uuid.UUID
-	PatientID  uuid.UUID
-	Status     AppointmentStatus
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	ExpiresAt  *time.Time
+	ID        uuid.UUID
+	SlotID    uuid.UUID
+	PatientID uuid.UUID
+	Status    AppointmentStatus
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	ExpiresAt *time.Time
 }
 
 type EventLog struct {
-	ID           int64
-	EventType    string
+	ID            int64
+	EventType     string
 	AppointmentID *uuid.UUID
-	Payload      []byte
-	CreatedAt    time.Time
+	Payload       []byte
+	CreatedAt     time.Time
+}
+
+type AppointmentDetail struct {
+	Appointment
+	Slot      *AppointmentSlot
+	Patient   *Patient
+	Clinician *Clinician
 }

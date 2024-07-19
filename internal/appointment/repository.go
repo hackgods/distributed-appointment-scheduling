@@ -35,4 +35,9 @@ type Repository interface {
 
 	// Event logging
 	InsertEvent(ctx context.Context, ev EventLog) error
+
+	// Read operations with joins
+	GetAppointmentDetail(ctx context.Context, id uuid.UUID) (*AppointmentDetail, error)
+	ListAppointmentsByPatient(ctx context.Context, patientID uuid.UUID, limit, offset int) ([]AppointmentDetail, error)
+	ListAppointmentsBySlot(ctx context.Context, slotID uuid.UUID) ([]AppointmentDetail, error)
 }
