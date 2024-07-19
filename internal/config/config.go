@@ -19,6 +19,7 @@ type Config struct {
 	AppointmentTTL  time.Duration // how long a pending appointment stays reserved
 	LockTTL         time.Duration // how long a Redis slot lock lives
 	ShutdownTimeout time.Duration // graceful shutdown timeout
+	WorkerInterval  time.Duration // how often the expiry worker runs
 }
 
 func Load() (Config, error) {
@@ -29,6 +30,7 @@ func Load() (Config, error) {
 		AppointmentTTL:  getDuration("APPOINTMENT_TTL", 10*time.Minute),
 		LockTTL:         getDuration("LOCK_TTL", 5*time.Second),
 		ShutdownTimeout: getDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
+		WorkerInterval:  getDuration("WORKER_INTERVAL", time.Minute),
 	}
 
 	if cfg.PostgresDSN == "" {
