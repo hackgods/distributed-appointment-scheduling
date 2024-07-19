@@ -3,6 +3,7 @@ module github.com/hackgods/distributed-appointment-scheduling
 go 1.23.0
 
 require (
+	github.com/brianvoe/gofakeit/v7 v7.9.0
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
