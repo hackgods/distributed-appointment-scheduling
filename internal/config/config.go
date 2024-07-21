@@ -7,6 +7,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -23,6 +25,8 @@ type Config struct {
 }
 
 func Load() (Config, error) {
+	_ = godotenv.Load()
+
 	cfg := Config{
 		Env:             getEnv("APP_ENV", "dev"),
 		HTTPPort:        getEnv("HTTP_PORT", "8080"),
